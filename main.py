@@ -93,6 +93,15 @@ class User:
     def pay_with_balance(self, target, amount, note):
         self.balance -= amount
         
+        if self.username == target.username:
+            raise PaymentException('User cannot pay themselves.')
+
+        elif amount <= 0.0:
+            raise PaymentException('Amount must be a non-negative number.')
+
+        elif self.credit_card_number is None:
+            raise PaymentException('Must have a credit card to make a payment.')
+          
         payment = Payment(amount, self, target, note)
         target.add_to_balance(amount)
         
