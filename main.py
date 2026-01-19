@@ -31,6 +31,8 @@ class User:
         self.credit_card_number = credit_card_number
         self.balance = balance
         self.feed = []
+        self.friends = []
+        
         if self._is_valid_username(username):
             self.username = username
         else:
@@ -38,12 +40,14 @@ class User:
 
 
     def retrieve_feed(self):
-        # TODO: add code here
-        return []
+        return self.feed
 
+    def retrieve_friends(self):
+        return self.friends
+      
     def add_friend(self, new_friend):
-        # TODO: add code here
-        pass
+        self.friends.append(new_friend)
+        self._add_friend_on_feed(new_friend)
 
     def add_to_balance(self, amount):
         self.balance += float(amount)
@@ -59,14 +63,16 @@ class User:
             raise CreditCardException('Invalid credit card number.')
 
     def pay(self, target, amount, note):
-        
-        if target.balance < amount:
-          self.pay_with_card
-        else:
-          target.balance -= amount   
-          
-        self.feed.append(f"{self.username} paid {target.username} {amount} for {note}")     
+        try:
+          if target.balance < amount:
+            self.pay_with_card(target, amount, note)
+          else:
+            self.balance -= amount   
 
+          target.balance += amount
+          self._add_payment_on_feed(target, amount, note)
+        except PaymentException:
+          pass
     def pay_with_card(self, target, amount, note):
         amount = float(amount)
 
@@ -98,7 +104,11 @@ class User:
     def _charge_credit_card(self, credit_card_number):
         # magic method that charges a credit card thru the card processor
         pass
-
+    
+    def _add_payment_on_feed(self, target, amount, note):
+        self.feed.append(f"{self.username} paid {target.username} {amount:.2f} for {note}")           
+    def _add_friend_on_feed(self, new_friend):
+        self.feed.append(f"{self.username} added {new_friend.username} as friends")      
 
 class MiniVenmo:
     
@@ -106,11 +116,11 @@ class MiniVenmo:
         user = User(username, balance, credit_card_number)
         return user
 
-    def render_feed(self, feed):
+    def render_info(self, feed):
         # Bobby paid Carol $5.00 for Coffee
         # Carol paid Bobby $15.00 for Lunch
-        # TODO: add code here
-        pass
+        for item in feed:
+          print(item)
 
     @classmethod
     def run(cls):
@@ -129,7 +139,7 @@ class MiniVenmo:
             print(e)
 
         feed = bobby.retrieve_feed()
-        venmo.render_feed(feed)
+        venmo.render_info(feed)
 
         bobby.add_friend(carol)
 
@@ -154,7 +164,36 @@ class TestUser(unittest.TestCase):
       
       joe1.pay(joe2, 5.00, "Coffee")
       
-      assert joe2.balance == 5.00
-    
+      assert joe1.balance == 0.00
+      
+    def test_venmo_payment_without_sufficient_credit(self):
+      venmo = MiniVenmo()
+      joe1 = venmo.create_user("joe1", 5.00, "4111111111111111")
+      joe2 = venmo.create_user("joe2", 10.00, "4242424242424242")
+      
+      joe1.pay(joe2, 15.00, "Coffee")
+      
+      assert joe1.balance == 5.00
+      
+    def test_feed(self):
+      venmo = MiniVenmo()
+      joe1 = venmo.create_user("joe1", 5.00, "4111111111111111")
+      joe2 = venmo.create_user("joe2", 10.00, "4242424242424242")
+      
+      joe1.pay(joe2, 5.00, "Coffee")
+      feed = joe1.retrieve_feed()
+      
+      assert feed == ['joe1 paid joe2 5.00 for Coffee']
+
+    def test_add_friend(self):
+      venmo = MiniVenmo()
+      joe1 = venmo.create_user("joe1", 5.00, "4111111111111111")
+      joe2 = venmo.create_user("joe2", 10.00, "4242424242424242")
+      
+      joe1.add_friend(joe2)
+      
+      assert joe2 in joe1.retrieve_friends()
+      
+
 if __name__ == '__main__':
     unittest.main()
