@@ -92,7 +92,11 @@ class User:
 
     def pay_with_balance(self, target, amount, note):
         self.balance -= amount
-        target.balance += amount
+        
+        payment = Payment(amount, self, target, note)
+        target.add_to_balance(amount)
+        
+        return payment
 
     def _is_valid_credit_card(self, credit_card_number):
         return credit_card_number in ["4111111111111111", "4242424242424242"]
